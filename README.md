@@ -9,6 +9,12 @@ A mobile-first political & economic news aggregator built with Expo + EAS. It pr
 
 Preview: https://dexterdexter-expo-project--l0e0wb3fss.expo.app
 
+Production: https://dexterdexter-expo-project.expo.app
+
+Release: `v1.0.0` — 2026-02-18
+
+Changelog: initial production release — map-based discovery, NewsAPI ingestion, RapidAPI proxy with silent NewsAPI fallback, CI and EAS Hosting deployment
+
 ---
 
 ## Quick start 🚀
