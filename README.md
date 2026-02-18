@@ -1,65 +1,87 @@
-# Welcome to your Expo app 👋
+# AutoNewsAI 🗺️📰
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A mobile-first political & economic news aggregator built with Expo + EAS. It provides:
 
-## Get started
+- Map-based news discovery and politician profiles
+- Server-side RapidAPI proxies (CNN / Reuters) with a silent fallback to NewsAPI
+- Secure secret handling via EAS environment variables (no keys in the client)
+- Web + native builds using Expo Router and EAS Hosting
 
-To start the app, in your terminal run:
+Preview: https://dexterdexter-expo-project--l0e0wb3fss.expo.app
 
-```bash
-npm run start
-```
+---
 
-In the output, you'll find options to open the app in:
+## Quick start 🚀
 
-- [a development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [an Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [an iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Workflows
-
-This project is configured to use [EAS Workflows](https://docs.expo.dev/eas/workflows/get-started/) to automate some development and release processes. These commands are set up in [`package.json`](./package.json) and can be run using NPM scripts in your terminal.
-
-### Previews
-
-Run `npm run draft` to [publish a preview update](https://docs.expo.dev/eas/workflows/examples/publish-preview-update/) of your project, which can be viewed in Expo Go or in a development build.
-
-### Development Builds
-
-Run `npm run development-builds` to [create a development build](https://docs.expo.dev/eas/workflows/examples/create-development-builds/). Note - you'll need to follow the [Prerequisites](https://docs.expo.dev/eas/workflows/examples/create-development-builds/#prerequisites) to ensure you have the correct emulator setup on your machine.
-
-### Production Deployments
-
-Run `npm run deploy` to [deploy to production](https://docs.expo.dev/eas/workflows/examples/deploy-to-production/). Note - you'll need to follow the [Prerequisites](https://docs.expo.dev/eas/workflows/examples/deploy-to-production/#prerequisites) to ensure you're set up to submit to the Apple and Google stores.
-
-## Hosting
-
-Expo offers hosting for websites and API functions via EAS Hosting. This project exposes API routes at `app/api/rapid/*+api.ts` (server only). Use `npx expo export --platform web` + `eas deploy` to publish both the web site and the server routes. See the [Getting Started](https://docs.expo.dev/eas/hosting/get-started/) guide to learn more.
-
-
-## Get a fresh project
-
-When you're ready, run:
+1. Clone
 
 ```bash
-npm run reset-project
+git clone https://github.com/quantum-apollo/AutoNewsAI.git
+cd AutoNewsAI
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2. Install
 
-## Learn more
+```bash
+npm ci
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+3. Set secrets (do NOT commit `.env`)
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- `NEWS_API_KEY` — NewsAPI.org server key
+- `RAPIDAPI_KEY` — RapidAPI key (optional; proxies handle missing/subscription by falling back)
+- Optional: `RAPID_PROXY_URL`, `RAPIDAPI_HOST_CNN`, `RAPIDAPI_HOST_REUTERS`
 
-## Join the community
+Store these in EAS Hosting / EAS CLI or your local `.env` for development.
 
-Join our community of developers creating universal apps.
+4. Run (development)
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+npx expo start --dev-client   # native dev-client
+npx expo start                # web
+```
+
+5. Deploy (preview)
+
+```bash
+npx expo export --platform web --no-ssg
+npx eas-cli@latest deploy     # creates a preview on EAS Hosting
+```
+
+---
+
+## Important server routes (server-side only) 🔧
+
+- `GET /api/debug/env` — shows which secrets are present at runtime
+- `GET /api/aggregate/news` — NewsAPI aggregator (politics / economics / global)
+- `GET /api/rapid/cnn?q=<q>` — CNN proxy; add `&force_fallback=1` to force NewsAPI fallback when testing
+
+Examples:
+
+```bash
+curl "https://<your-preview>/api/debug/env"
+curl "https://<your-preview>/api/rapid/cnn?q=ukraine&force_fallback=1"
+```
+
+Behavior notes:
+- RapidAPI proxies never expose provider errors to clients; any RapidAPI failure silently falls back to `NewsAPI` if available.
+- Add `force_fallback=1` to test fallback paths.
+
+---
+
+## Development notes & security ⚠️
+
+- Secrets must be set via EAS Hosting or the EAS CLI — they are not accessible from the client bundle.
+- `.env` is ignored and was removed from the repository index.
+- Console/log statements used only in `scripts/` for tests; production code is cleaned of `console.*`.
+
+---
+
+## Contributing & license
+
+- Open issues or PRs against this repository.
+- Licensed under MIT — see `LICENSE`.
+
+---
+
+If you want, I can add CI (GitHub Actions) or a short `CONTRIBUTING.md` next. 💡
