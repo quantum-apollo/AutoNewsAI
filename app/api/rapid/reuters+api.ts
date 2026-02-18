@@ -1,4 +1,4 @@
-import Rapid from '@/services/rapidapi';
+import * as Rapid from '@/services/rapidapi';
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     const res = await Rapid.reutersCategory(urlParam);
     const articles = (res && res.articles) || [];
     return new Response(JSON.stringify({ articles }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-  } catch (_err: any) {
+  } catch {
     // silent fallback → return empty array
     return new Response(JSON.stringify({ articles: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   }

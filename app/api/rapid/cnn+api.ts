@@ -1,5 +1,5 @@
-import Rapid from '@/services/rapidapi';
-import NewsAPI from '@/services/newsapi';
+import * as Rapid from '@/services/rapidapi';
+import * as NewsAPI from '@/services/newsapi';
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     const articles = (res && res.articles) || [];
     // always return 200 and never expose RapidAPI errors; fail silently to NewsAPI
     return new Response(JSON.stringify({ articles }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-  } catch (_err: any) {
+  } catch {
     // On unexpected error, silently return empty list
     return new Response(JSON.stringify({ articles: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   }

@@ -42,11 +42,11 @@ function IosMap({ markers = [], initialRegion, style, onMarkerPress, focusMarker
     let mounted = true;
     try {
       // try dynamic require inside effect (safe) and cache module in ref
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const mod = require('expo-maps');
       appleMapsRef.current = mod?.AppleMaps || null;
       mounted && setNativeAvailable(!!appleMapsRef.current);
-    } catch (_err) {
+    } catch {
       mounted && setNativeAvailable(false);
     }
     return () => {
@@ -98,11 +98,11 @@ function AndroidMap({ markers = [], initialRegion, style, onMarkerPress, onClust
   React.useEffect(() => {
     let mounted = true;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const mod = require('expo-maps');
       expoMapsRef.current = mod || null;
       mounted && setNativeAvailable(!!expoMapsRef.current);
-    } catch (_err) {
+    } catch {
       mounted && setNativeAvailable(false);
     }
     return () => {
@@ -110,6 +110,7 @@ function AndroidMap({ markers = [], initialRegion, style, onMarkerPress, onClust
     };
   }, []);
 
+  // `expoMapsRef.current` is a mutable ref — exclude it from the dependency list.
   React.useEffect(() => {
     if (!expoMapsRef.current) return;
     let mounted = true;
@@ -123,14 +124,14 @@ function AndroidMap({ markers = [], initialRegion, style, onMarkerPress, onClust
         }
         const req = await Maps.requestPermissionsAsync();
         mounted && setLocationPermission(!!req?.granted);
-      } catch (_err) {
+      } catch {
         mounted && setLocationPermission(false);
       }
     })();
     return () => {
       mounted = false;
     };
-  }, [expoMapsRef.current]);
+  }, []);
 
   React.useEffect(() => {
     if (mapRef.current && focusMarker) {
@@ -138,6 +139,14 @@ function AndroidMap({ markers = [], initialRegion, style, onMarkerPress, onClust
       mapRef.current.setCameraPosition?.({ coordinates: { latitude: focusMarker.latitude, longitude: focusMarker.longitude }, zoom: focusMarker.zoom ?? 8 });
     }
   }, [focusMarker]);
+
+  if (locationPermission === null) {
+    return (
+      <View style={[styles.container, style, styles.center]}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
 
   if (nativeAvailable === null) {
     return (
@@ -276,7 +285,7 @@ function WebMap({ markers = [], initialRegion, style, onMarkerPress, onClusterPr
           if (msg?.type === 'markers') {
             window.setMarkers(msg.markers || []);
           }
-        } catch (err) {
+        } catch {
           // ignore
         }
       });
@@ -299,7 +308,7 @@ function WebMap({ markers = [], initialRegion, style, onMarkerPress, onClusterPr
       } else if (msg.type === 'clusterPress') {
         onClusterPress?.(msg.clusterId);
       }
-    } catch (err) {
+    } catch {
       // ignore
     }
   };

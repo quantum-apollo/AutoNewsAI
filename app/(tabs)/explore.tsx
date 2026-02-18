@@ -16,7 +16,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 
 export default function TabTwoScreen() {
-  const { data, isLoading } = useMapData();
+  const { data } = useMapData();
   const { width } = useWindowDimensions();
   const isNarrow = width < 900;
   const [focused, setFocused] = React.useState<{ id?: string; latitude: number; longitude: number } | null>(null);

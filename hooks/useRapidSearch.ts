@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import Rapid from '@/services/rapidapi';
+import * as Rapid from '@/services/rapidapi';
 
 export default function useRapidSearch() {
   const [loading, setLoading] = useState(false);

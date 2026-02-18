@@ -1,6 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { FlatList, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
+
+import useSearch from '@/hooks/useSearch';
 
 type Marker = {
   id: string;
@@ -13,10 +15,8 @@ type Marker = {
   breakingArticles?: any[];
 };
 
-import useSearch from '@/hooks/useSearch';
-
 export default function SearchPanel({ data, onSelect }: { data?: Marker[]; onSelect?: (m: Marker) => void }) {
-  const { query, setQuery, results, loading } = useSearch();
+  const { setQuery, results, loading } = useSearch();
   const [localQuery, setLocalQuery] = useState('');
 
   // If user hasn't typed, fall back to local `data` (map points). Otherwise show Meilisearch results.

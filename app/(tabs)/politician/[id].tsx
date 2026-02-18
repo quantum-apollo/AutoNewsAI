@@ -1,12 +1,11 @@
 import React from 'react';
 import { ScrollView, StyleSheet, View, Image } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import Meili from '@/lib/meilisearch';
+import { useLocalSearchParams } from 'expo-router';
+import { getPoliticianById, searchNewsByPoliticianId } from '@/lib/meilisearch';
 import { ThemedText } from '@/components/ThemedText';
 
 export default function PoliticianProfile() {
   const params = useLocalSearchParams() as { id?: string };
-  const router = useRouter();
   const [data, setData] = React.useState<any | null>(null);
   const [news, setNews] = React.useState<any[]>([]);
 
@@ -14,9 +13,9 @@ export default function PoliticianProfile() {
     let mounted = true;
     (async () => {
       if (!params.id) return;
-      const p = await Meili.getPoliticianById(params.id!);
+      const p = await getPoliticianById(params.id!);
       if (mounted) setData(p || null);
-      const related = await Meili.searchNewsByPoliticianId(params.id!, 8);
+      const related = await searchNewsByPoliticianId(params.id!, 8);
       if (mounted) setNews(related || []);
     })();
     return () => {
