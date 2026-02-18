@@ -11,7 +11,8 @@ export default function useRapidSearch() {
     setError(null);
     try {
       const res = await Rapid.cnnSearch(q, 1);
-      setResults(res?.articles || res?.results || []);
+      // Rapid.cnnSearch normalizes responses to `{ articles, totalResults, source }` — use `articles` only.
+      setResults(res?.articles || []);
     } catch (err: any) {
       setError(err.message || 'error');
       setResults([]);

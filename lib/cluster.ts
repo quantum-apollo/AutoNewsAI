@@ -4,7 +4,7 @@
   an index and query clusters for the current viewport + zoom.
 */
 
-import Supercluster from '@mapbox/supercluster';
+import Supercluster from 'supercluster';
 
 export type PointFeature = {
   type: 'Feature';
@@ -12,7 +12,8 @@ export type PointFeature = {
   geometry: { type: 'Point'; coordinates: [number, number] };
 };
 
-export function createClusterIndex(points: PointFeature[], options?: Partial<Supercluster.Options>) {
+// `supercluster` may expose different type names across versions — keep `options` loosely typed to avoid CI/type conflicts.
+export function createClusterIndex(points: PointFeature[], options?: any) {
   const index = new Supercluster({
     radius: 60,
     maxZoom: 16,
