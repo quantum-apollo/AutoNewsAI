@@ -33,113 +33,147 @@ type Props = {
   focusMarker?: { id?: string; latitude: number; longitude: number; zoom?: number } | null;
 };
 
-export default function MapView({ markers = [], initialRegion, style, onMarkerPress, onClusterPress, focusMarker }: Props) {
-  if (Platform.OS === 'ios') {
-    // Lazy import to avoid runtime errors when `expo-maps` isn't installed yet.
+function IosMap({ markers = [], initialRegion, style, onMarkerPress, focusMarker }: Props) {
+  const mapRef = React.useRef<any>(null);
+  const appleMapsRef = React.useRef<any | null>(null);
+  const [nativeAvailable, setNativeAvailable] = React.useState<boolean | null>(null);
+
+  React.useEffect(() => {
+    let mounted = true;
     try {
-      // @ts-ignore Expo Maps types (optional runtime import)
-      const { AppleMaps } = require('expo-maps');
-      const mapRef = React.useRef<any>(null);
-
-      React.useEffect(() => {
-        if (mapRef.current && focusMarker) {
-          // @ts-ignore - call native method when available
-          mapRef.current.setCameraPosition?.({ coordinates: { latitude: focusMarker.latitude, longitude: focusMarker.longitude }, zoom: focusMarker.zoom ?? 8 });
-        }
-      }, [focusMarker]);
-
-      const iosMarkers = markers.map((m) => ({
-        id: m.id,
-        coordinates: { latitude: m.latitude, longitude: m.longitude },
-        title: m.title || '',
-      }));
-
-      return (
-        // @ts-ignore
-        <AppleMaps.View ref={mapRef} style={[styles.container, style]} markers={iosMarkers} cameraPosition={initialRegion} />
-      );
-    } catch (err) {
-      return (
-        <View style={[styles.container, style, styles.center]}>
-          <Text>expo-maps not installed or dev-build not available.</Text>
-          <Text style={{ marginTop: 8 }}>Run an EAS dev-build to test native maps.</Text>
-        </View>
-      );
+      // try dynamic require inside effect (safe) and cache module in ref
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const mod = require('expo-maps');
+      appleMapsRef.current = mod?.AppleMaps || null;
+      mounted && setNativeAvailable(!!appleMapsRef.current);
+    } catch (_err) {
+      mounted && setNativeAvailable(false);
     }
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (mapRef.current && focusMarker) {
+      // @ts-ignore - call native method when available
+      mapRef.current.setCameraPosition?.({ coordinates: { latitude: focusMarker.latitude, longitude: focusMarker.longitude }, zoom: focusMarker.zoom ?? 8 });
+    }
+  }, [focusMarker]);
+
+  if (nativeAvailable === null) {
+    return (
+      <View style={[styles.container, style, styles.center]}>
+        <ActivityIndicator />
+      </View>
+    );
   }
 
-  // Android: try native `expo-maps` GoogleMaps.View with official permission flow.
-  // Fallback to the WebView MapLibre implementation if native API or permissions are unavailable.
-  if (Platform.OS === 'android') {
-    // runtime import so code still runs in environments without native dev-client
+  if (!nativeAvailable || !appleMapsRef.current) {
+    return (
+      <View style={[styles.container, style, styles.center]}>
+        <Text>expo-maps not installed or dev-build not available.</Text>
+        <Text style={{ marginTop: 8 }}>Run an EAS dev-build to test native maps.</Text>
+      </View>
+    );
+  }
+
+  const iosMarkers = markers.map((m) => ({
+    id: m.id,
+    coordinates: { latitude: m.latitude, longitude: m.longitude },
+    title: m.title || '',
+  }));
+
+  const AppleMaps = appleMapsRef.current;
+  // @ts-ignore
+  return <AppleMaps.View ref={mapRef} style={[styles.container, style]} markers={iosMarkers} cameraPosition={initialRegion} />;
+}
+
+function AndroidMap({ markers = [], initialRegion, style, onMarkerPress, onClusterPress, focusMarker }: Props) {
+  const mapRef = React.useRef<any>(null);
+  const expoMapsRef = React.useRef<any | null>(null);
+  const [nativeAvailable, setNativeAvailable] = React.useState<boolean | null>(null);
+  const [locationPermission, setLocationPermission] = React.useState<boolean | null>(null);
+
+  React.useEffect(() => {
+    let mounted = true;
     try {
-      // @ts-ignore
-      const { GoogleMaps, Maps } = require('expo-maps');
-      const mapRef = React.useRef<any>(null);
-      const [locationPermission, setLocationPermission] = React.useState<boolean | null>(null);
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const mod = require('expo-maps');
+      expoMapsRef.current = mod || null;
+      mounted && setNativeAvailable(!!expoMapsRef.current);
+    } catch (_err) {
+      mounted && setNativeAvailable(false);
+    }
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
-      React.useEffect(() => {
-        let mounted = true;
-        (async () => {
-          try {
-            const status = await Maps.getPermissionsAsync();
-            if (status?.granted) {
-              mounted && setLocationPermission(true);
-              return;
-            }
-            const req = await Maps.requestPermissionsAsync();
-            mounted && setLocationPermission(!!req?.granted);
-          } catch (err) {
-            mounted && setLocationPermission(false);
-          }
-        })();
-        return () => {
-          mounted = false;
-        };
-      }, []);
-
-      React.useEffect(() => {
-        if (mapRef.current && focusMarker) {
-          // @ts-ignore - setCameraPosition available on native map refs
-          mapRef.current.setCameraPosition?.({ coordinates: { latitude: focusMarker.latitude, longitude: focusMarker.longitude }, zoom: focusMarker.zoom ?? 8 });
+  React.useEffect(() => {
+    if (!expoMapsRef.current) return;
+    let mounted = true;
+    (async () => {
+      try {
+        const Maps = expoMapsRef.current.Maps;
+        const status = await Maps.getPermissionsAsync();
+        if (status?.granted) {
+          mounted && setLocationPermission(true);
+          return;
         }
-      }, [focusMarker]);
-
-      if (locationPermission === null) {
-        return (
-          <View style={[styles.container, style, styles.center]}>
-            <ActivityIndicator />
-          </View>
-        );
+        const req = await Maps.requestPermissionsAsync();
+        mounted && setLocationPermission(!!req?.granted);
+      } catch (_err) {
+        mounted && setLocationPermission(false);
       }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [expoMapsRef.current]);
 
-      const androidMarkers = markers.map((m) => ({
-        id: m.id,
-        coordinates: { latitude: m.latitude, longitude: m.longitude },
-        title: m.title || '',
-        showCallout: !!m.breaking, // only popup native callout for breaking news
-      }));
-
-      // @ts-ignore
-      return (
-        <GoogleMaps.View
-          ref={mapRef}
-          style={[styles.container, style]}
-          markers={androidMarkers}
-          cameraPosition={initialRegion}
-          onMarkerClick={(event: any) => {
-            const id = event?.id ?? event?.properties?.id;
-            onMarkerPress?.(id);
-          }}
-          onMapClick={() => { /* placeholder */ }}
-        />
-      );
-    } catch (err) {
-      // runtime import failed (expo-maps not available) — fall back to WebView below
+  React.useEffect(() => {
+    if (mapRef.current && focusMarker) {
+      // @ts-ignore - setCameraPosition available on native map refs
+      mapRef.current.setCameraPosition?.({ coordinates: { latitude: focusMarker.latitude, longitude: focusMarker.longitude }, zoom: focusMarker.zoom ?? 8 });
     }
+  }, [focusMarker]);
+
+  if (nativeAvailable === null) {
+    return (
+      <View style={[styles.container, style, styles.center]}>
+        <ActivityIndicator />
+      </View>
+    );
   }
 
-  // Fallback WebView (MapLibre) for Android or if native maps unavailable
+  if (!nativeAvailable || !expoMapsRef.current) return null;
+
+  const GoogleMaps = expoMapsRef.current.GoogleMaps;
+  const androidMarkers = markers.map((m) => ({
+    id: m.id,
+    coordinates: { latitude: m.latitude, longitude: m.longitude },
+    title: m.title || '',
+    showCallout: !!m.breaking,
+  }));
+
+  // @ts-ignore
+  return (
+    <GoogleMaps.View
+      ref={mapRef}
+      style={[styles.container, style]}
+      markers={androidMarkers}
+      cameraPosition={initialRegion}
+      onMarkerClick={(event: any) => {
+        const id = event?.id ?? event?.properties?.id;
+        onMarkerPress?.(id);
+      }}
+      onMapClick={() => { /* placeholder */ }}
+    />
+  );
+}
+
+function WebMap({ markers = [], initialRegion, style, onMarkerPress, onClusterPress, focusMarker }: Props) {
   const webviewHtml = `<!doctype html>
 <html>
   <head>
@@ -307,6 +341,11 @@ export default function MapView({ markers = [], initialRegion, style, onMarkerPr
   );
 }
 
+export default function MapView(props: Props) {
+  if (Platform.OS === 'ios') return <IosMap {...props} />;
+  if (Platform.OS === 'android') return <AndroidMap {...props} />;
+  return <WebMap {...props} />;
+}
 const styles = StyleSheet.create({
   container: {
     width: '100%',
