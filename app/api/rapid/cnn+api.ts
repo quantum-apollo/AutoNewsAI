@@ -8,7 +8,11 @@ export async function GET(request: Request) {
 
   // allow forcing the NewsAPI fallback for testing
   if (url.searchParams.get('force_fallback') === '1') {
-    const fallback = await NewsAPI.searchNewsAPI(q, ['cnn', 'reuters', 'associated-press'], page, 20);
+    // broadened fallback: general search first, then source-restricted if empty
+    let fallback = await NewsAPI.searchNewsAPI(q, undefined, page, 20);
+    if ((!fallback.articles || fallback.articles.length === 0) && q) {
+      fallback = await NewsAPI.searchNewsAPI(q, ['cnn', 'reuters', 'associated-press'], page, 20);
+    }
     return new Response(JSON.stringify({ articles: fallback.articles || [] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   }
 

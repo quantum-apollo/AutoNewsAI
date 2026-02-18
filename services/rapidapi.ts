@@ -45,8 +45,12 @@ export async function reutersCategory(urlParam: string) {
     const articles = rapidRes?.articles || rapidRes?.results || (Array.isArray(rapidRes) ? rapidRes : []);
     return { articles, totalResults: articles.length, source: 'rapid' };
   } catch (err: any) {
+    // Prefer a broader NewsAPI search first, then fall back to source-restricted queries if empty.
     try {
-      const fallback = await NewsAPI.searchNewsAPI('', ['reuters'], 1, 10);
+      let fallback = await NewsAPI.searchNewsAPI('', undefined, 1, 10);
+      if ((!fallback.articles || fallback.articles.length === 0)) {
+        fallback = await NewsAPI.searchNewsAPI('', ['reuters'], 1, 10);
+      }
       return { articles: fallback.articles || [], totalResults: fallback.totalResults || 0, source: 'newsapi' };
     } catch (err2: any) {
       return { articles: [], totalResults: 0, source: 'none' };
@@ -66,12 +70,12 @@ export async function cnnSearch(q: string, page = 1) {
   } catch (err: any) {
     // RapidAPI failed: silently fallback to NewsAPI (no error returned to client)
     try {
-      // Try targeted sources first, then a broader search if empty
+      // Prefer a broader NewsAPI search first, then try targeted sources if empty
       const sources = ['cnn', 'reuters', 'associated-press'];
-      let fallback = await NewsAPI.searchNewsAPI(q || '', sources, page, pageSize);
+      let fallback = await NewsAPI.searchNewsAPI(q || '', undefined, page, pageSize);
       if ((!fallback.articles || fallback.articles.length === 0) && q) {
-        // broaden the search if the specific-sources search returned nothing
-        fallback = await NewsAPI.searchNewsAPI(q || '', undefined, page, pageSize);
+        // try source-restricted search as a secondary option
+        fallback = await NewsAPI.searchNewsAPI(q || '', sources, page, pageSize);
       }
       return { articles: fallback.articles || [], totalResults: fallback.totalResults || 0, source: 'newsapi' };
     } catch (err2: any) {
