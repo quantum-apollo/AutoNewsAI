@@ -1,0 +1,31 @@
+name: Scheduled news aggregator
+
+on:
+  schedule:
+    # every 30 minutes
+    - cron: '*/30 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  fetch-news:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Curl aggregator (preview)
+        run: |
+          PREVIEW_URL="https://dexterdexter-expo-project--sls54jeo0g.expo.app"
+          echo "Calling $PREVIEW_URL/api/aggregate/news"
+          HTTP_STATUS=$(curl -s -o /tmp/agg.json -w "%{http_code}" "$PREVIEW_URL/api/aggregate/news")
+          echo "status=$HTTP_STATUS"
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "Request failed, response follows:"
+            cat /tmp/agg.json
+            exit 1
+          fi
+          echo "Response sample:"
+          jq '.byCategory | map_values(length)' /tmp/agg.json || true
+      - name: Upload result artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: latest-aggregator-result
+          path: /tmp/agg.json

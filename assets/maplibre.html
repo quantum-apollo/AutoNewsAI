@@ -1,0 +1,144 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://unpkg.com https://demotiles.maplibre.org; script-src 'self' https://unpkg.com; style-src 'self' https://unpkg.com; img-src 'self' data: https:; connect-src 'self' https://demotiles.maplibre.org;">
+    <title>MapLibre fallback (Android)</title>
+    <style>html,body,#map{height:100%;margin:0;padding:0}</style>
+    <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
+    <script>
+      const map = new maplibregl.Map({
+        container: 'map',
+        style: 'https://demotiles.maplibre.org/style.json',
+        center: [0, 20],
+        zoom: 1.5
+      });
+
+      map.on('load', () => {
+        map.addSource('markers', {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [] },
+          cluster: true,
+          clusterMaxZoom: 14,
+          clusterRadius: 50
+        });
+
+        map.addLayer({
+          id: 'clusters',
+          type: 'circle',
+          source: 'markers',
+          filter: ['has', 'point_count'],
+          paint: {
+            'circle-color': ['step', ['get', 'point_count'], '#51bbd6', 10, '#f1f075', 30, '#f28cb1'],
+            'circle-radius': ['step', ['get', 'point_count'], 16, 10, 20, 30, 26]
+          }
+        });
+
+        map.addLayer({
+          id: 'cluster-count',
+          type: 'symbol',
+          source: 'markers',
+          filter: ['has', 'point_count'],
+          layout: {
+            'text-field': ['get', 'point_count_abbreviated'],
+            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+            'text-size': 12
+          }
+        });
+
+        map.addLayer({
+          id: 'unclustered-point',
+          type: 'circle',
+          source: 'markers',
+          filter: ['!', ['has', 'point_count']],
+          paint: {
+            'circle-color': ['case', ['get', 'breaking'], '#ff6b00', '#11b4da'],
+            'circle-radius': 8,
+            'circle-stroke-width': 1,
+            'circle-stroke-color': '#fff'
+          }
+        });
+
+        map.on('click', 'clusters', (e) => {
+          const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
+          const clusterId = features[0].properties.cluster_id;
+          map.getSource('markers').getClusterExpansionZoom(clusterId, (err, zoom) => {
+            if (err) return;
+            map.easeTo({ center: features[0].geometry.coordinates, zoom });
+          });
+          window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'clusterPress', clusterId }));
+        });
+
+        map.on('click', 'unclustered-point', (e) => {
+          const props = e.features[0].properties;
+          window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'markerPress', id: props.id }));
+        });
+
+        window.setMarkers = function(markers){
+          const features = (markers || []).map(m => ({
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [m.longitude, m.latitude] },
+            properties: { id: m.id || m.key || '', title: m.title || '' }
+          }));
+          const geojson = { type: 'FeatureCollection', features };
+          const src = map.getSource('markers');
+          if (src) src.setData(geojson);
+        };
+
+        window.flyTo = function(coords){
+          if (!coords) return;
+          map.easeTo({ center: [coords.longitude, coords.latitude], zoom: coords.zoom || 8 });
+        };
+
+        let selectedId = null;
+        map.addLayer({
+          id: 'selected-point',
+          type: 'circle',
+          source: 'markers',
+          filter: ['==', ['get', 'id'], ''],
+          paint: {
+            'circle-color': '#ff6b00',
+            'circle-radius': 12,
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#fff'
+          }
+        });
+
+        window.selectMarker = function(id){
+          selectedId = id || null;
+          map.setFilter('selected-point', selectedId ? ['==', ['get', 'id'], selectedId] : ['==', ['get', 'id'], '']);
+        };
+
+        window.clearSelection = function(){
+          selectedId = null;
+          map.setFilter('selected-point', ['==', ['get', 'id'], '']);
+        };
+
+        window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'ready' }));
+      });
+
+      window.addEventListener('message', (ev) => {
+        try {
+          const msg = typeof ev.data === 'string' ? JSON.parse(ev.data) : ev.data;
+          if (msg?.type === 'markers') {
+            window.setMarkers(msg.markers || []);
+          } else if (msg?.type === 'flyTo') {
+            window.flyTo(msg.coords || null);
+          } else if (msg?.type === 'selectMarker') {
+            window.selectMarker(msg.id || null);
+          } else if (msg?.type === 'clearSelection') {
+            window.clearSelection();
+          }
+        } catch (err) {
+          // ignore
+        }
+      });
+    </script>
+  </body>
+</html>

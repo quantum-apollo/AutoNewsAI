@@ -1,0 +1,86 @@
+{
+  "expo": {
+    "name": "expo-project",
+    "slug": "expo-project",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "expo-project",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.dexterdexter.expoproject",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.dexterdexter.expoproject",
+      "config": {
+        "googleMaps": {
+          "apiKey": "GOOGLE_MAPS_API_KEY"
+        }
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "server",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "expo-maps",
+        {
+          "requestLocationPermission": true,
+          "locationPermission": "Allow NEWSAI to use your location"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b141b99a-a4a2-43cf-85bb-4cd768c7ff88"
+      },
+
+      "newsapi": {
+        "apiKey": "",
+        "breakingWindowHours": 3
+      },
+      "rapidapi": {
+        "key": "",
+        "hosts": {
+          "reuters": "reuters-api.p.rapidapi.com",
+          "cnn": "cnn-api1.p.rapidapi.com",
+          "classifier": "ai-powered-news-category-classifier-api.p.rapidapi.com",
+          "politics": "politics-api.p.rapidapi.com"
+        }
+      }
+    },
+    "owner": "dexterdexter",
+    "updates": {
+      "url": "https://u.expo.dev/b141b99a-a4a2-43cf-85bb-4cd768c7ff88"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
+  }
+}

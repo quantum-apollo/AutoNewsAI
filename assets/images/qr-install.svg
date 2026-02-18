@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- QR wrapper (references external QR generator). Open this file in VS Code or a browser and scan the QR with your phone. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="420" viewBox="0 0 420 420">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <image width="420" height="420" href="https://api.qrserver.com/v1/create-qr-code/?size=420x420&data=https%3A%2F%2Fexpo.dev%2Faccounts%2Fdexterdexter%2Fprojects%2Fexpo-project%2Fbuilds%2F0dc100ce-4726-4ead-9ee3-447303e6811d"/>
+</svg>
